@@ -45,22 +45,27 @@ function App() {
   }
 
   const addDrawListeners = useCallback(
-    (map: mapboxgl.Map, draw: MapboxDraw) => {
-      map!.on("draw.create", () => {
-        const feature = draw.getAll().features.find(f => f.geometry.type === "LineString");
+    (map: mapboxgl.Map) => {
+      map!.on("draw.create", (event: { features: GeoJSON.Feature<GeoJSON.Geometry>[] }) => {
+        const feature = event.features[0]; // [0] gets the newly created feature
         if (feature && feature.geometry.type === "LineString") {
           calculateLineLength(feature.geometry);
+          calculateAzimuths(feature.geometry);
         }
       });
-      map!.on("draw.update", () => {
-        const feature = draw.getAll().features.find(f => f.geometry.type === "LineString");
+  
+      map!.on("draw.update", (event: { features: GeoJSON.Feature<GeoJSON.Geometry>[] }) => {
+        const feature = event.features[0]; // [0] gets the updated feature
         if (feature && feature.geometry.type === "LineString") {
           calculateLineLength(feature.geometry);
+          calculateAzimuths(feature.geometry);
         }
       });
     },
     []
   );
+  
+  
   
 
   function calculateLineLength(geometry: GeoJSON.LineString) { //calculate the length of the line in kilometers
@@ -72,6 +77,23 @@ function App() {
     const lengthInKm = turf.length(feature, { units: 'kilometers' });
     console.log("Line Length in km:", lengthInKm);
   }
+
+  function calculateAzimuths(geometry: GeoJSON.LineString) { //calculate azimuths between lines
+    const coordinates = geometry.coordinates;
+    if (coordinates.length < 2) {
+      console.log("Not enough points to calculate azimuth.");
+      return;
+    }
+    const azimuths: number[] = [];
+    for (let i = 0; i < coordinates.length - 1; i++) {
+      const point1 = turf.point(coordinates[i]);
+      const point2 = turf.point(coordinates[i + 1]);
+      const azimuth = turf.bearing(point1, point2);
+      azimuths.push(azimuth);
+      console.log(`Azimuth between point ${i} and ${i + 1}:`, azimuth, "°");
+    }
+    return azimuths;
+  }
   
 
 
@@ -80,7 +102,7 @@ function App() {
     const map = getMap();
     const draw = initDraw();
     addDrawToMap(map!, draw);
-    addDrawListeners(map!, draw);
+    addDrawListeners(map!);
     return () => {
       if (map) map.removeControl(draw);
     };
