@@ -1,131 +1,107 @@
 import { MapRef } from "react-map-gl";
-import * as turf from "@turf/turf"; //geospatial calculations
+import * as turf from "@turf/turf"; // Geospatial calculations
 
 
 
 interface UseMapCalcsProps {
   mapRef: React.MutableRefObject<MapRef | null>;
-  azimuthFeaturesRef: React.MutableRefObject<GeoJSON.Feature<GeoJSON.Point>[]>; //azimuths from all calculations
+  azimuthFeaturesRef: React.MutableRefObject<GeoJSON.Feature<GeoJSON.Point>[]>; // Stores calculated azimuths
 }
+
 
 
 const useMapCalcs = ({ mapRef, azimuthFeaturesRef }: UseMapCalcsProps) => {
+  const AZIMUTH_LAYER_ID = "azimuth-labels";
 
-  function getMap() {
-    return mapRef.current?.getMap();
-  }
-  
 
-  function calculateLineLength(geometry: GeoJSON.LineString) {
-    const feature: GeoJSON.Feature<GeoJSON.LineString> = {
-      type: "Feature",
-      geometry: geometry,
-      properties: {}
-    };
-    const lengthInKm = turf.length(feature, { units: 'kilometers' });
+  // Returns the current Mapbox map instance
+  const getMap = () => mapRef.current?.getMap();
+
+  // Calculates the length of a given line and logs it
+  const calculateLineLength = (geometry: GeoJSON.LineString) => {
+    const feature: GeoJSON.Feature<GeoJSON.LineString> = { type: "Feature", geometry, properties: {} };
+    const lengthInKm = turf.length(feature, { units: "kilometers" });
     console.log("Line Length in km:", lengthInKm);
-  }
+    return lengthInKm;
+  };
 
-
-  function calculateAzimuths(geometry: GeoJSON.LineString) {
-    const coordinates = geometry.coordinates;
-    if (coordinates.length < 2) {
-      console.log("Not enough points to calculate azimuth.");
-      return;
-    }
-    const azimuths: number[] = [];
-    for (let i = 0; i < coordinates.length - 1; i++) {
-      const point1 = turf.point(coordinates[i]);
-      const point2 = turf.point(coordinates[i + 1]);
-      const azimuth = turf.bearing(point1, point2);
-      azimuths.push(azimuth);
-      console.log(`Azimuth from Point ${i} to Point ${i + 1}: ${azimuth}°`);
-    }
+  // Calculates azimuths between each pair of consecutive points in a line
+  const calculateAzimuths = (geometry: GeoJSON.LineString) => {
+    if (geometry.coordinates.length < 2) return console.log("Not enough points to calculate azimuth.");
+    const azimuths = geometry.coordinates
+      .slice(0, -1) //remove last coord (no need to calc azm. for last point)
+      .map((coord, i) => { 
+        const azimuth = turf.bearing(turf.point(coord), turf.point(geometry.coordinates[i + 1])); //calc azm. for a pair of points
+        return azimuth;
+      });
     return azimuths;
-  }
-  
+  };
 
-
-  function drawAzimuths(geometry: GeoJSON.LineString) {
+  // Draws azimuth labels at the midpoint between each pair of consecutive points 
+  const drawAzimuths = (geometry: GeoJSON.LineString) => {
     const map = getMap();
-    if (!map) return;
-    const coordinates = geometry.coordinates;
-    if (coordinates.length < 2) {
-      console.log("Not enough points to draw azimuths.");
-      return;
-    }
-    const newAzimuthFeatures: GeoJSON.Feature<GeoJSON.Point>[] = [];
-    for (let i = 0; i < coordinates.length - 1; i++) {
-      const point1 = turf.point(coordinates[i]);
-      const point2 = turf.point(coordinates[i + 1]);
-      const azimuth = turf.bearing(point1, point2);
-      const midpoint = turf.midpoint(point1, point2);
-      newAzimuthFeatures.push({
-        type: "Feature",
-        geometry: midpoint.geometry,
-        properties: { azimuth: `${azimuth.toFixed(1)}°` },
+    if (!map || geometry.coordinates.length < 2) return console.log("Not enough points to draw azimuths.");
+    const newAzimuthFeatures = geometry.coordinates
+      .slice(0, -1) //remove last coord (no need to show azm. for last point)
+      .map((coord, i) => {
+        const midpoint = turf.midpoint(turf.point(coord), turf.point(geometry.coordinates[i + 1]));
+        return {
+          type: "Feature",
+          geometry: midpoint.geometry,
+          properties: { azimuth: `${turf.bearing(turf.point(coord), turf.point(geometry.coordinates[i + 1])).toFixed(1)}°` },
+        };
       });
-    }
-    azimuthFeaturesRef.current = newAzimuthFeatures;
+    azimuthFeaturesRef.current = newAzimuthFeatures as GeoJSON.Feature<GeoJSON.Point>[];
     updateAzimuthLayer();
-  }
-  
+  };
 
-
-  function updateAzimuthLayer() {
+  // Updates or removes the azimuth layer
+  const updateAzimuthLayer = () => {
     const map = getMap();
     if (!map) return;
-    const azimuthLayerId = "azimuth-labels";
-    if (azimuthFeaturesRef.current.length === 0) {
-      if (map.getLayer(azimuthLayerId)) {
-        map.removeLayer(azimuthLayerId);
-      }
-      if (map.getSource(azimuthLayerId)) {
-        map.removeSource(azimuthLayerId);
-      }
-      return;
-    }
+    const hasAzimuths = azimuthFeaturesRef.current.length > 0;
+    const sourceExists = Boolean(map.getSource(AZIMUTH_LAYER_ID));
+    const layerExists = Boolean(map.getLayer(AZIMUTH_LAYER_ID));
+    const sourceData: GeoJSON.FeatureCollection<GeoJSON.Point> = { type: "FeatureCollection", features: azimuthFeaturesRef.current };
+    if (!hasAzimuths) { removeAzimuthLayer(map, layerExists, sourceExists); return; }
+    if (sourceExists) setAzimuthLayer(map, sourceData);
+    else addAzimuthLayer(map, sourceData);
+  };
   
-    if (map.getSource(azimuthLayerId)) {
-      (map.getSource(azimuthLayerId) as mapboxgl.GeoJSONSource).setData({
-        type: "FeatureCollection",
-        features: azimuthFeaturesRef.current,
-      });
-    } else {
-      map.addSource(azimuthLayerId, {
-        type: "geojson",
-        data: {
-          type: "FeatureCollection",
-          features: azimuthFeaturesRef.current,
-        },
-      });
-      map.addLayer({
-        id: azimuthLayerId,
-        type: "symbol",
-        source: azimuthLayerId,
-        layout: {
-          "text-field": ["get", "azimuth"],
-          "text-size": 14,
-          "text-anchor": "center",
-          "text-offset": [0, 0],
-        },
-        paint: {
-          "text-color": "#ff0000",
-          "text-halo-color": "#ffffff",
-          "text-halo-width": 1,
-        },
-      });
-    }
+  // Helper to remove the azimuth layer
+  const removeAzimuthLayer = (map: mapboxgl.Map, layerExists: boolean, sourceExists: boolean) => {
+    if (layerExists) map.removeLayer(AZIMUTH_LAYER_ID);
+    if (sourceExists) map.removeSource(AZIMUTH_LAYER_ID);
+  };
+
+  // Helper to set new azimuth layer data
+  const setAzimuthLayer = (map: mapboxgl.Map, sourceData: GeoJSON.FeatureCollection<GeoJSON.Point>) => {
+    (map.getSource(AZIMUTH_LAYER_ID) as mapboxgl.GeoJSONSource).setData(sourceData)
   }
   
+  // Helper to add the azimuth layer
+  const addAzimuthLayer = (map: mapboxgl.Map, sourceData: GeoJSON.FeatureCollection<GeoJSON.Point>) => {
+    map.addSource(AZIMUTH_LAYER_ID, { type: "geojson", data: sourceData });
+    map.addLayer({
+      id: AZIMUTH_LAYER_ID,
+      type: "symbol",
+      source: AZIMUTH_LAYER_ID,
+      layout: {
+        "text-field": ["get", "azimuth"],
+        "text-size": 14,
+        "text-anchor": "center",
+        "text-offset": [0, 0],
+      },
+      paint: {
+        "text-color": "#ff0000",
+        "text-halo-color": "#ffffff",
+        "text-halo-width": 1,
+      },
+    });
+  };
+  
 
+  return { calculateLineLength, calculateAzimuths, drawAzimuths, updateAzimuthLayer };
+};
 
-  return {
-    calculateLineLength,
-    calculateAzimuths,
-    drawAzimuths,
-    updateAzimuthLayer
-  }
-}
-
-export default useMapCalcs
+export default useMapCalcs;
