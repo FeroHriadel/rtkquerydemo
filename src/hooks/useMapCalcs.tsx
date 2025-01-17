@@ -5,7 +5,7 @@ import * as turf from "@turf/turf"; // Geospatial calculations
 
 interface UseMapCalcsProps {
   mapRef: React.MutableRefObject<MapRef | null>;
-  azimuthsRef: React.MutableRefObject<GeoJSON.Feature<GeoJSON.Point>[]>; // Stores calculated azimuths
+  azimuthsRef: React.MutableRefObject<GeoJSON.Feature<GeoJSON.Point>[]>;
 }
 
 
@@ -21,27 +21,14 @@ const useMapCalcs = ({ mapRef, azimuthsRef }: UseMapCalcsProps) => {
   const calculateLineLength = (geometry: GeoJSON.LineString) => {
     const feature: GeoJSON.Feature<GeoJSON.LineString> = { type: "Feature", geometry, properties: {} };
     const lengthInKm = turf.length(feature, { units: "kilometers" });
-    console.log("Line Length in km:", lengthInKm);
     return lengthInKm;
   };
 
-  // Calculates azimuths between each pair of consecutive points in a line
-  const calculateAzimuths = (geometry: GeoJSON.LineString) => {
-    if (geometry.coordinates.length < 2) return console.log("Not enough points to calculate azimuth.");
-    const azimuths = geometry.coordinates
-      .slice(0, -1) //remove last coord (no need to calc azm. for last point)
-      .map((coord, i) => { 
-        const azimuth = turf.bearing(turf.point(coord), turf.point(geometry.coordinates[i + 1])); //calc azm. for a pair of points
-        return azimuth;
-      });
-    return azimuths;
-  };
-
   // Draws azimuth labels at the midpoint between each pair of consecutive points 
-  const drawAzimuths = (geometry: GeoJSON.LineString) => {
+  const createAzimuths = (geometry: GeoJSON.LineString) => {
     const map = getMap();
     if (!map || geometry.coordinates.length < 2) return console.log("Not enough points to draw azimuths.");
-    const newAzimuthFeatures = geometry.coordinates
+    const newAzimuths = geometry.coordinates
       .slice(0, -1) //remove last coord (no need to show azm. for last point)
       .map((coord, i) => {
         const midpoint = turf.midpoint(turf.point(coord), turf.point(geometry.coordinates[i + 1]));
@@ -51,7 +38,7 @@ const useMapCalcs = ({ mapRef, azimuthsRef }: UseMapCalcsProps) => {
           properties: { azimuth: `${turf.bearing(turf.point(coord), turf.point(geometry.coordinates[i + 1])).toFixed(1)}°` },
         };
       });
-    azimuthsRef.current = newAzimuthFeatures as GeoJSON.Feature<GeoJSON.Point>[];
+    azimuthsRef.current = newAzimuths as GeoJSON.Feature<GeoJSON.Point>[];
     updateAzimuthLayer();
   };
 
@@ -101,7 +88,7 @@ const useMapCalcs = ({ mapRef, azimuthsRef }: UseMapCalcsProps) => {
   };
   
 
-  return { calculateLineLength, calculateAzimuths, drawAzimuths, updateAzimuthLayer };
+  return { calculateLineLength, createAzimuths, updateAzimuthLayer };
 };
 
 export default useMapCalcs;
