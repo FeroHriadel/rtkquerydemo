@@ -3,14 +3,14 @@ import * as turf from "@turf/turf"; // Geospatial calculations
 
 
 
-interface UseMapCalcsProps {
+interface UseMapServiceProps {
   mapRef: React.MutableRefObject<MapRef | null>;
   azimuthsRef: React.MutableRefObject<GeoJSON.Feature<GeoJSON.Point>[]>;
 }
 
 
 
-const useMapCalcs = ({ mapRef, azimuthsRef }: UseMapCalcsProps) => {
+const useMapService = ({ mapRef, azimuthsRef }: UseMapServiceProps) => {
   const AZIMUTH_LAYER_ID = "azimuth-labels";
 
 
@@ -91,4 +91,4 @@ const useMapCalcs = ({ mapRef, azimuthsRef }: UseMapCalcsProps) => {
   return { calculateLineLength, createAzimuths, updateAzimuthLayer };
 };
 
-export default useMapCalcs;
+export default useMapService;

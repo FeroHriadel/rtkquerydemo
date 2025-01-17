@@ -3,7 +3,7 @@ import Map, { NavigationControl, MapRef } from "react-map-gl";
 import "mapbox-gl/dist/mapbox-gl.css";
 import MapboxDraw from "@mapbox/mapbox-gl-draw";
 import "@mapbox/mapbox-gl-draw/dist/mapbox-gl-draw.css";
-import useMapCalcs from "./hooks/useMapCalcs"; // geospatial calculations
+import useMapService from "./hooks/useMapService"; // geospatial calculations
 
 
 
@@ -14,7 +14,7 @@ function App() {
   const drawRef = useRef<MapboxDraw | null>(null);
   const mapRef = useRef<MapRef | null>(null);
   const azimuthsRef = useRef<GeoJSON.Feature<GeoJSON.Point>[]>([]);
-  const { calculateLineLength, createAzimuths, updateAzimuthLayer } = useMapCalcs({ mapRef, azimuthsRef });
+  const { calculateLineLength, createAzimuths, updateAzimuthLayer } = useMapService({ mapRef, azimuthsRef });
   const [lineLength, setLineLength] = useState(0);
   const [lineCoords, setLineCoords] = useState<number[][]>([]);
 
