@@ -5,12 +5,12 @@ import * as turf from "@turf/turf"; // Geospatial calculations
 
 interface UseMapCalcsProps {
   mapRef: React.MutableRefObject<MapRef | null>;
-  azimuthFeaturesRef: React.MutableRefObject<GeoJSON.Feature<GeoJSON.Point>[]>; // Stores calculated azimuths
+  azimuthsRef: React.MutableRefObject<GeoJSON.Feature<GeoJSON.Point>[]>; // Stores calculated azimuths
 }
 
 
 
-const useMapCalcs = ({ mapRef, azimuthFeaturesRef }: UseMapCalcsProps) => {
+const useMapCalcs = ({ mapRef, azimuthsRef }: UseMapCalcsProps) => {
   const AZIMUTH_LAYER_ID = "azimuth-labels";
 
 
@@ -51,7 +51,7 @@ const useMapCalcs = ({ mapRef, azimuthFeaturesRef }: UseMapCalcsProps) => {
           properties: { azimuth: `${turf.bearing(turf.point(coord), turf.point(geometry.coordinates[i + 1])).toFixed(1)}°` },
         };
       });
-    azimuthFeaturesRef.current = newAzimuthFeatures as GeoJSON.Feature<GeoJSON.Point>[];
+    azimuthsRef.current = newAzimuthFeatures as GeoJSON.Feature<GeoJSON.Point>[];
     updateAzimuthLayer();
   };
 
@@ -59,10 +59,10 @@ const useMapCalcs = ({ mapRef, azimuthFeaturesRef }: UseMapCalcsProps) => {
   const updateAzimuthLayer = () => {
     const map = getMap();
     if (!map) return;
-    const hasAzimuths = azimuthFeaturesRef.current.length > 0;
+    const hasAzimuths = azimuthsRef.current.length > 0;
     const sourceExists = Boolean(map.getSource(AZIMUTH_LAYER_ID));
     const layerExists = Boolean(map.getLayer(AZIMUTH_LAYER_ID));
-    const sourceData: GeoJSON.FeatureCollection<GeoJSON.Point> = { type: "FeatureCollection", features: azimuthFeaturesRef.current };
+    const sourceData: GeoJSON.FeatureCollection<GeoJSON.Point> = { type: "FeatureCollection", features: azimuthsRef.current };
     if (!hasAzimuths) { removeAzimuthLayer(map, layerExists, sourceExists); return; }
     if (sourceExists) setAzimuthLayer(map, sourceData);
     else addAzimuthLayer(map, sourceData);

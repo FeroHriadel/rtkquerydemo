@@ -11,8 +11,8 @@ function App() {
   const [mapLoaded, setMapLoaded] = useState<boolean>(false);
   const drawRef = useRef<MapboxDraw | null>(null);
   const mapRef = useRef<MapRef | null>(null);
-  const azimuthFeaturesRef = useRef<GeoJSON.Feature<GeoJSON.Point>[]>([]);
-  const { calculateLineLength, calculateAzimuths, drawAzimuths, updateAzimuthLayer } = useMapCalcs({ mapRef, azimuthFeaturesRef });
+  const azimuthsRef = useRef<GeoJSON.Feature<GeoJSON.Point>[]>([]);
+  const { calculateLineLength, calculateAzimuths, drawAzimuths, updateAzimuthLayer } = useMapCalcs({ mapRef, azimuthsRef });
 
 
   const onMapLoad = () => setMapLoaded(true);
@@ -36,7 +36,7 @@ function App() {
 
   // Clears any previous azimuths
   const clearAzimuths = useCallback(() => {
-    azimuthFeaturesRef.current = [];
+    azimuthsRef.current = [];
   }, []);
   
   // Remove previous lines
