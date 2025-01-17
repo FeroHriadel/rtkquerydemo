@@ -39,10 +39,11 @@ const useMapCalcs = ({ mapRef, azimuthFeaturesRef }: UseMapCalcsProps) => {
       const point2 = turf.point(coordinates[i + 1]);
       const azimuth = turf.bearing(point1, point2);
       azimuths.push(azimuth);
-      console.log(`Azimuth between point ${i} and ${i + 1}:`, azimuth, "°");
+      console.log(`Azimuth from Point ${i} to Point ${i + 1}: ${azimuth}°`);
     }
     return azimuths;
   }
+  
 
 
   function drawAzimuths(geometry: GeoJSON.LineString) {
@@ -65,9 +66,10 @@ const useMapCalcs = ({ mapRef, azimuthFeaturesRef }: UseMapCalcsProps) => {
         properties: { azimuth: `${azimuth.toFixed(1)}°` },
       });
     }
-    azimuthFeaturesRef.current = [...azimuthFeaturesRef.current, ...newAzimuthFeatures];
+    azimuthFeaturesRef.current = newAzimuthFeatures;
     updateAzimuthLayer();
   }
+  
 
 
   function updateAzimuthLayer() {

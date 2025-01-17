@@ -53,13 +53,17 @@ function App() {
     }
   }
 
+  function clearSavedAzimuths() {
+    azimuthFeaturesRef.current = [];
+  }
+
   const addDrawListeners = useCallback(
     (map: mapboxgl.Map, draw: MapboxDraw) => {
       map!.on("draw.create", (event: { features: GeoJSON.Feature<GeoJSON.Geometry>[] }) => {
         removeDrawings(draw);
         const feature = event.features[0]; // [0] gets the newly created feature
         if (feature && feature.geometry.type === "LineString") {
-          azimuthFeaturesRef.current = [];
+          clearSavedAzimuths();
           calculateLineLength(feature.geometry);
           drawAzimuths(feature.geometry);
         }
@@ -67,14 +71,14 @@ function App() {
       map!.on("draw.update", (event: { features: GeoJSON.Feature<GeoJSON.Geometry>[] }) => {
         const feature = event.features[0]; // [0] gets the updated feature
         if (feature && feature.geometry.type === "LineString") {
-          azimuthFeaturesRef.current = [];
+          clearSavedAzimuths();
           calculateLineLength(feature.geometry);
           calculateAzimuths(feature.geometry);
           drawAzimuths(feature.geometry);
         }
       });
       map!.on("draw.delete", () => {
-        azimuthFeaturesRef.current = [];
+        clearSavedAzimuths();
         updateAzimuthLayer();
       });
     },
