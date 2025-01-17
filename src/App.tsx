@@ -16,6 +16,7 @@ function App() {
 
 
   const onMapLoad = () => setMapLoaded(true);
+
   const getMap = () => mapRef.current?.getMap();
 
   // Initializes the drawing controls
@@ -38,9 +39,8 @@ function App() {
     azimuthFeaturesRef.current = [];
   }, []);
   
-
-  // Remove all drawn lines, keeping the last one if more than one exists
-  const removeDrawings = () => {
+  // Remove previous lines
+  const removePreviousLine = () => {
     const allFeatures = drawRef.current!.getAll();
     if (allFeatures.features.length > 1) {
       drawRef.current!.delete(allFeatures.features[0].id as string);
@@ -48,9 +48,8 @@ function App() {
   };
 
   // Event handlers for draw actions
-  const onDrawCreate = useCallback(
-    (event: { features: GeoJSON.Feature<GeoJSON.Geometry>[] }) => {
-      removeDrawings();
+  const onDrawCreate = useCallback((event: { features: GeoJSON.Feature<GeoJSON.Geometry>[] }) => {
+      removePreviousLine();
       const feature = event.features[0];
       if (feature && feature.geometry.type === "LineString") {
         clearAzimuths();
@@ -61,8 +60,7 @@ function App() {
     [calculateLineLength, drawAzimuths, clearAzimuths]
   );
 
-  const onDrawUpdate = useCallback(
-    (event: { features: GeoJSON.Feature<GeoJSON.Geometry>[] }) => {
+  const onDrawUpdate = useCallback((event: { features: GeoJSON.Feature<GeoJSON.Geometry>[] }) => {
       const feature = event.features[0];
       if (feature && feature.geometry.type === "LineString") {
         clearAzimuths();
@@ -71,30 +69,30 @@ function App() {
         drawAzimuths(feature.geometry);
       }
     },
-    [calculateLineLength, calculateAzimuths, drawAzimuths]
+    [calculateLineLength, calculateAzimuths, drawAzimuths, clearAzimuths]
   );
 
   const addDrawListeners = useCallback(
     (map: mapboxgl.Map) => {
       map.on("draw.create", (event) => onDrawCreate(event));
       map.on("draw.update", onDrawUpdate);
-      // map.on("draw.delete", clearAzimuths);  =>  trash button malfunctioned, I overode it in maskTrashButton and clearMap
+      // map.on("draw.delete", onDrawDelete);  =>  trash button malfunctioned, I overode it in maskTrashButton and clearMap
     },
     [onDrawCreate, onDrawUpdate]
   );
 
-  // Create a new invisible element over the trash button
+  // Create an invisible element over the trash button
   const maskTrashButton = (deleteLineBtn: HTMLElement) => {
     const overlayDiv = document.createElement("div");
-      overlayDiv.style.position = "absolute";
-      overlayDiv.style.top = `${deleteLineBtn.getBoundingClientRect().top}px`;
-      overlayDiv.style.left = `${deleteLineBtn.getBoundingClientRect().left}px`;
-      overlayDiv.style.width = `${deleteLineBtn.offsetWidth}px`;
-      overlayDiv.style.height = `${deleteLineBtn.offsetHeight}px`;
-      overlayDiv.style.backgroundColor = "transparent";
-      overlayDiv.style.zIndex = "999";
-      document.body.appendChild(overlayDiv);
-      return overlayDiv;
+    overlayDiv.style.position = "absolute";
+    overlayDiv.style.top = `${deleteLineBtn.getBoundingClientRect().top}px`;
+    overlayDiv.style.left = `${deleteLineBtn.getBoundingClientRect().left}px`;
+    overlayDiv.style.width = `${deleteLineBtn.offsetWidth}px`;
+    overlayDiv.style.height = `${deleteLineBtn.offsetHeight}px`;
+    overlayDiv.style.backgroundColor = "transparent";
+    overlayDiv.style.zIndex = "999";
+    document.body.appendChild(overlayDiv);
+    return overlayDiv;
   }
 
   //Remove everything painted in map
@@ -114,9 +112,7 @@ function App() {
     initDraw();
     addDrawToMap(map!, drawRef.current!);
     addDrawListeners(map!);
-    return () => {
-      if (map) map.removeControl(drawRef.current!);
-    };
+    return () => { if (map) map.removeControl(drawRef.current!); };
   }, [mapLoaded, addDrawListeners]);
 
   // Overide MapboxDraw trash button
