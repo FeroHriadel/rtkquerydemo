@@ -3,7 +3,7 @@ import Map, { NavigationControl, MapRef } from "react-map-gl";
 import "mapbox-gl/dist/mapbox-gl.css";
 import MapboxDraw from "@mapbox/mapbox-gl-draw";
 import "@mapbox/mapbox-gl-draw/dist/mapbox-gl-draw.css";
-import useMapService from "./hooks/useMapService"; // geospatial calculations
+import useMapFeatures from "./hooks/useMapFeatures"; // geospatial calculations
 import LineInfo from "./components/LineInfo";
 import LineForm from "./components/LineForm";
 
@@ -16,10 +16,9 @@ function App() {
   const drawRef = useRef<MapboxDraw | null>(null);
   const mapRef = useRef<MapRef | null>(null);
   const azimuthsRef = useRef<GeoJSON.Feature<GeoJSON.Point>[]>([]);
-  const { calculateLineLength, drawLineProgrammatically, createAzimuths, updateAzimuthLayer } = useMapService({ mapRef, azimuthsRef });
+  const { calculateLineLength, drawLineProgrammatically, createAzimuths, updateAzimuthLayer } = useMapFeatures({ mapRef, azimuthsRef });
   const [lineLength, setLineLength] = useState(0);
   const [lineCoords, setLineCoords] = useState<number[][]>([]);
-
 
   // Marks map as loaded
   function onMapLoad() {
@@ -151,7 +150,6 @@ function App() {
     }
   }
 
-
   // Initializes map and drawing tool when map is loaded
   useEffect(() => {
     if (!mapLoaded) return;
@@ -176,7 +174,6 @@ function App() {
       document.body.removeChild(overlayDiv);
     };
   }, [mapLoaded]);
-
 
   // Render on screen
   return (

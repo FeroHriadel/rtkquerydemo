@@ -122,13 +122,9 @@ function LineForm({ lineCoords, onSubmit }: LineFormProps) {
 
         <DialogFooter className="sm:justify-start">
           <DialogClose asChild>
-            <Button type="button" variant="secondary">
-              Close
-            </Button>
+            <Button type="button" variant="secondary">Close</Button>
           </DialogClose>
-          <Button type="submit" form="line-edit-form">
-            Save
-          </Button>
+          <Button type="submit" form="line-edit-form">Save</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
