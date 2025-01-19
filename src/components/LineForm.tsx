@@ -13,20 +13,19 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useState, useEffect } from "react";
 
+
+
 interface LineFormProps {
   lineCoords: number[][];
   onSubmit: (coords: number[][]) => void;
 }
 
+
+
 function LineForm({ lineCoords, onSubmit }: LineFormProps) {
   const [formValues, setFormValues] = useState([...lineCoords]); // Make a copy - don't change parent's lineCoords
   const [isDialogOpen, setIsDialogOpen] = useState(false);
 
-
-  // Only show form if line is drawn
-  function canRenderForm() {
-    return lineCoords.length > 0;
-  }
 
   // Change coordinate
   function onChange(value: string, index: number, latOrLng: "lat" | "lng") {
@@ -37,9 +36,28 @@ function LineForm({ lineCoords, onSubmit }: LineFormProps) {
     setFormValues(newValues);
   }
 
-  // Redraw line on map
+  // Remove coordinate
+  function onRemove(index: number) {
+    const newValues = formValues.filter((_, i) => i !== index);
+    setFormValues(newValues);
+  }
+
+  // Add coordinate
+  function onAddPoint() {
+    const newValues = [...formValues, [0, 0]]; // Add a new point with default values
+    setFormValues(newValues);
+  }
+
+  function isCoordsSame(coord1: number[], coord2: number[]) {
+    return coord1[0] === coord2[0] && coord1[1] === coord2[1];
+  }
+
+
+  // Redraw line on map on form submit
   function onFormSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
+    if (formValues.length < 2) return alert("Please add at least two points");
+    if (formValues.length === 2 && isCoordsSame(formValues[0], formValues[1])) return alert("Please add at least two different points");
     onSubmit(formValues);
     setIsDialogOpen(false);
   }
@@ -50,9 +68,8 @@ function LineForm({ lineCoords, onSubmit }: LineFormProps) {
     setFormValues([...lineCoords]);
   }, [lineCoords]);
 
-  
-  if (!canRenderForm()) return null;
 
+  // Render on screen
   return (
     <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
       <DialogTrigger asChild>
@@ -65,39 +82,43 @@ function LineForm({ lineCoords, onSubmit }: LineFormProps) {
           <DialogDescription>Change the line points coords</DialogDescription>
         </DialogHeader>
 
-        {formValues.map((coord, index) => (
-          <form
-            key={`lineform${index}`}
-            className="grid gap-4 py-4"
-            id="line-edit-form"
-            onSubmit={onFormSubmit}
-          >
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor={`lng${index}`} className="text-right">
-                Lng
-              </Label>
-              <Input
-                id={`lng${index}`}
-                value={coord[0]}
-                className="col-span-3"
-                onChange={(e) => onChange(e.target.value, index, "lng")}
-                type="number"
-              />
+        <form className="grid gap-4 py-4" id="line-edit-form" onSubmit={onFormSubmit}>
+          {formValues.map((coord, index) => (
+            /* Lng and lat Inputs */
+            <div key={`lineform${index}`} className="space-y-4">
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor={`lng${index}`} className="text-right">Lng</Label>
+                <Input
+                  id={`lng${index}`}
+                  value={coord[0]}
+                  className="col-span-3"
+                  onChange={(e) => onChange(e.target.value, index, "lng")}
+                  type="number"
+                />
+              </div>
+
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor={`lat${index}`} className="text-right">Lat</Label>
+                <Input
+                  id={`lat${index}`}
+                  value={coord[1]}
+                  className="col-span-3"
+                  onChange={(e) => onChange(e.target.value, index, "lat")}
+                  type="number"
+                />
+              </div>
+
+              <div className="flex justify-end">
+                <Button type="button" onClick={() => onRemove(index)} className="w-24" variant="destructive">Remove</Button>
+              </div>
             </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor={`lat${index}`} className="text-right">
-                Lat
-              </Label>
-              <Input
-                id={`lat${index}`}
-                value={coord[1]}
-                className="col-span-3"
-                onChange={(e) => onChange(e.target.value, index, "lat")}
-                type="number"
-              />
-            </div>
-          </form>
-        ))}
+          ))}
+          
+          {/* Add Point Button */}
+          <div className="flex justify-center">
+            <Button type="button" onClick={onAddPoint} variant="outline" className="w-24 mt-4">Add Point</Button>
+          </div>
+        </form>
 
         <DialogFooter className="sm:justify-start">
           <DialogClose asChild>
