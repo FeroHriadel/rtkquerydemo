@@ -1,5 +1,6 @@
 import { MapRef } from "react-map-gl";
 import * as turf from "@turf/turf"; // Geospatial calculations
+import MapboxDraw from "@mapbox/mapbox-gl-draw";
 
 
 
@@ -10,7 +11,7 @@ interface UseMapServiceProps {
 
 
 
-const useMapService = ({ mapRef, azimuthsRef }: UseMapServiceProps) => {
+function useMapService({ mapRef, azimuthsRef }: UseMapServiceProps) {
   const AZIMUTH_LAYER_ID = "azimuth-labels";
 
 
@@ -23,6 +24,17 @@ const useMapService = ({ mapRef, azimuthsRef }: UseMapServiceProps) => {
     const lengthInKm = turf.length(feature, { units: "kilometers" });
     return lengthInKm;
   };
+
+  // Draws line from coords on map
+  function drawLineProgrammatically(coords: number[][], draw: MapboxDraw) {
+    if (!draw || coords.length < 2) return;
+    const lineFeature: GeoJSON.Feature<GeoJSON.LineString> = {
+      type: "Feature",
+      geometry: { type: "LineString", coordinates: coords },
+      properties: {},
+    };
+    draw.add(lineFeature);
+  }
 
   // Draws azimuth labels at the midpoint between each pair of consecutive points 
   const createAzimuths = (geometry: GeoJSON.LineString) => {
@@ -88,7 +100,7 @@ const useMapService = ({ mapRef, azimuthsRef }: UseMapServiceProps) => {
   };
   
 
-  return { calculateLineLength, createAzimuths, updateAzimuthLayer };
+  return { calculateLineLength, drawLineProgrammatically, createAzimuths, updateAzimuthLayer };
 };
 
 export default useMapService;

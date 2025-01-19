@@ -4,6 +4,8 @@ import "mapbox-gl/dist/mapbox-gl.css";
 import MapboxDraw from "@mapbox/mapbox-gl-draw";
 import "@mapbox/mapbox-gl-draw/dist/mapbox-gl-draw.css";
 import useMapService from "./hooks/useMapService"; // geospatial calculations
+import LineInfo from "./components/LineInfo";
+import LineForm from "./components/LineForm";
 
 
 
@@ -14,7 +16,7 @@ function App() {
   const drawRef = useRef<MapboxDraw | null>(null);
   const mapRef = useRef<MapRef | null>(null);
   const azimuthsRef = useRef<GeoJSON.Feature<GeoJSON.Point>[]>([]);
-  const { calculateLineLength, createAzimuths, updateAzimuthLayer } = useMapService({ mapRef, azimuthsRef });
+  const { calculateLineLength, drawLineProgrammatically, createAzimuths, updateAzimuthLayer } = useMapService({ mapRef, azimuthsRef });
   const [lineLength, setLineLength] = useState(0);
   const [lineCoords, setLineCoords] = useState<number[][]>([]);
 
@@ -51,12 +53,47 @@ function App() {
     azimuthsRef.current = [];
   }
 
+  // Scroll map to coords
+  function scrollMapTo(coord: { lng: number; lat: number }) {
+    const map = mapRef.current?.getMap();
+    if (!map) return;
+    map.flyTo({
+      center: [coord.lng, coord.lat],
+      essential: true,
+      zoom: map.getZoom(),
+    });
+  }
+
   // Removes the previous drawn line if a new one is added
   function removePreviousLine() {
     const allFeatures = drawRef.current!.getAll();
     if (allFeatures.features.length > 1) {
       drawRef.current!.delete(allFeatures.features[0].id as string);
     }
+  }
+
+  // Set lineLength from [lmg, lat] array
+  function setLineLengthFromCoords(coords: number[][]) {
+    const geometry: GeoJSON.LineString = { type: "LineString", coordinates: coords };
+    const length = calculateLineLength(geometry);
+    setLineLength(length);
+  }
+
+  // Create azimuths from [lng, lat] array
+  function createAzimuthsFromCoords(coords: number[][]) {
+    const geometry: GeoJSON.LineString = { type: "LineString", coordinates: coords };
+    createAzimuths(geometry);
+  }
+
+  // Draws new line from coords
+  function createLine(coords: number[][]) {
+    if (!drawRef.current || coords?.length < 2) return;
+    clearMap();
+    drawLineProgrammatically(coords, drawRef.current);
+    setLineLengthFromCoords(coords);
+    setLineCoords(coords);
+    createAzimuthsFromCoords(coords);
+    scrollMapTo({lng: coords[0][0], lat: coords[0][1]});
   }
 
   // Handles creation of a new line on the map
@@ -143,8 +180,8 @@ function App() {
 
   // Render on screen
   return (
-    <div className="flex flex-col justify-center items-center h-screen">
-      <div id="map-container" className="h-[500px] max-w-[1000px] w-[95%] bg-slate-50">
+    <div className="flex flex-col items-center gap-4 py-10">
+      <main id="map-container" className="h-[500px] max-w-[1000px] w-[95%] bg-slate-50">
         <Map
           ref={mapRef}
           mapboxAccessToken={MAPBOX_TOKEN}
@@ -154,9 +191,13 @@ function App() {
         >
           <NavigationControl position="top-right" />
         </Map>
-      </div>
-      <p>{lineLength}</p>
-      <p>{JSON.stringify(lineCoords)}</p>
+      </main>
+
+      <section className="max-w-[1000px] w-[95%]">
+        <LineInfo lineCoords={lineCoords} lineLength={lineLength} />
+      </section>
+
+      <LineForm lineCoords={lineCoords} onSubmit={createLine} />
     </div>
   );
 }
