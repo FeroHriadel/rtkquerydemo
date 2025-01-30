@@ -4,12 +4,13 @@ import { useToast } from "@/hooks/use-toast";
 import Container from '@/components/Container';
 import Loading from '@/components/Loading';
 import TaskDialog from '@/components/TaskDialog';
-import { List, ListLine } from './components/List';
+import TaskDropdown from '@/components/TaskDropdown';
+import { List, ListLine } from '@/components/List';
 import { FaPlus } from "react-icons/fa6";
 import { IoCheckmarkOutline } from "react-icons/io5";
 import { IoPencil } from "react-icons/io5";
 import { GoTrash } from "react-icons/go";
-import { MdOutlineMoreVert } from "react-icons/md";
+
 
 
 const App = () => {
@@ -47,7 +48,7 @@ const App = () => {
           <p>Toggle</p>
           <div className='flex gap-2 cursor-pointer'>
             <FaPlus onClick={toggleDialog} />
-            <MdOutlineMoreVert />
+            <TaskDropdown />
           </div>
         </ListLine>
         {
