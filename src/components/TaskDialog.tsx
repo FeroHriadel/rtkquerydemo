@@ -5,7 +5,7 @@ import { Task } from "@/types/types";
 import { Button } from "./ui/button";
 import { useEffect, useState } from "react";
 import { useToast } from "@/hooks/use-toast";
-import { useAddTaskMutation, useUpdateTaskMutation } from "@/store/taskApi";
+import useTasks from "@/hooks/useTasks";
 
 
 
@@ -22,8 +22,7 @@ const TaskDialog = ({ isOpen, onOpenChange, task }: TaskDialogProps) => {
   const title = isEditing ? "Edit Task" : "Add Task";
   const [text, setText] = useState("");
   const { toast } = useToast();
-  const [addTask] = useAddTaskMutation();
-  const [updateTask] = useUpdateTaskMutation();
+  const { handleCreateTask, handleEditTask } = useTasks();
 
   
   // Update input text
@@ -46,26 +45,10 @@ const TaskDialog = ({ isOpen, onOpenChange, task }: TaskDialogProps) => {
   };
 
   // Create new task
-  const createTask = async () => {
-    try {
-      toast({ description: "Creating task" }); //takes a while (not optimistic) - toast keeps user entertained
-      await addTask({ text }).unwrap();
-    } catch (error) {
-      console.log(error);
-      toast({ title: "Error", description: "Failed to create task" });
-    }
-  }
+  const createTask = async () => handleCreateTask(text);
 
   // Change task text
-  const editTask = async () => {
-    if (!task) return;
-    try {
-      await updateTask({ id: task.id, text }).unwrap();
-    } catch (error) {
-      console.log(error);
-      toast({ title: "Error", description: "Failed to update task" });
-    }
-  }
+  const editTask = async () => handleEditTask(task, text);
   
   // Submit form
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {

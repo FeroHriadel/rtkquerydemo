@@ -1,17 +1,16 @@
-import { useEffect, useState } from 'react';
-import { useGetTasksQuery, useDeleteTaskMutation, useCompleteTaskMutation } from '@/store/taskApi';
-import { useToast } from "@/hooks/use-toast";
+import { useMemo, useState } from 'react';
+import useTasks from './hooks/useTasks';
 import Container from '@/components/Container';
 import Loading from '@/components/Loading';
 import TaskDialog from '@/components/TaskDialog';
 import TaskDropdown from '@/components/TaskDropdown';
+import TaskFilter from './components/TaskFilter';
 import { List, ListLine } from '@/components/List';
 import { FaPlus } from "react-icons/fa6";
 import { IoCheckmarkOutline } from "react-icons/io5";
 import { IoPencil } from "react-icons/io5";
 import { GoTrash } from "react-icons/go";
 import { Task, FilterValue } from '@/types/types';
-import TaskFilter from './components/TaskFilter';
 
 
 
@@ -19,12 +18,7 @@ const App = () => {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editedTask, setEditedTask] = useState<Task | null>(null); //task to edit
   const [filter, setFilter] = useState<FilterValue>(FilterValue.ALL);
-  const [shownTasks, setShowntasks] = useState<Task[]>(); //tasks shown to user based on filter
-  const { data: tasks, isLoading: loadingTasks, error: getTasksError } = useGetTasksQuery(); //all tasks
-  const [deleteTask] = useDeleteTaskMutation();
-  const [completeTask] = useCompleteTaskMutation();
-  const { toast } = useToast();
-
+  const { tasks, loadingTasks, handleCompleteTask, handleCompleteAllTasks, handleDeleteTask, handleDeleteAllTasks } = useTasks();
 
   // Update filter value
   const handleFilterChange = (value: FilterValue) => setFilter(value);
@@ -33,77 +27,32 @@ const App = () => {
   const clearEditedTask = () => setEditedTask(null);
 
   // Open/close dialog & clear edited task on close
-  const toggleDialog = () => {
-    setDialogOpen(prev => {
-      if (prev) clearEditedTask(); //if dialog is closing clear editedTask if any
-      return !prev;
+  const handleToggleDialog = () => {
+    setDialogOpen(previousState => {
+      const isDialogOpen = previousState === true;
+      if (isDialogOpen) clearEditedTask(); //if dialog is closing clear editedTask if any
+      return !previousState;
     }); 
   }
 
-  // Delete task optimistically
-  const handleDeleteTask = async (id: number) => {
-    try {
-      await deleteTask(id).unwrap(); //unwrap throws an error if mutation fails
-    } catch (error) {
-      console.log(error);
-      toast({title: "Error", description: "Failed to delete task" });
-    }
-  }
-
-  // Update to completed optimistically
-  const handleCompleteTask = async (id: number) => {
-    try {
-      await completeTask({ id, completed: true }).unwrap();
-    } catch (error) {
-      console.log(error);
-      toast({title: "Error", description: "Failed to update task" });
-    }
-  }
-
-  // Open edit task dialog in edit mode
+  // Open task dialog in edit mode
   const handleEditTask = (task: Task) => {
     setEditedTask(task);
     setDialogOpen(true);
   }
 
-  // Get incomplete tasks
-  const getIncompleteTasks = () => {
-    const incompleteTasks = tasks?.filter(t => t.completed === false);
-    return incompleteTasks;
-  }
-
-  // Update all tasks to 'completed'
-  const completeAllTasks = () => {
-    const incompleteTasks = getIncompleteTasks();
-    incompleteTasks?.forEach(t => handleCompleteTask(t.id));
-  }
-
-  // Delete all tasks
-  const deleteAllTasks = () => {
-    tasks?.forEach(t => handleDeleteTask(t.id));
-  }
-
-
-  // Show load task error
-  useEffect(() => {
-    if (getTasksError) toast({title: "Error", description: "Failed to load tasks" });
-  }, [getTasksError, toast]);
-
-  // Set tasks to show to user by filter value
-  useEffect(() => {
+  // show tasks by filter value
+  const shownTasks = useMemo(() => {
     switch (filter) {
-      case FilterValue.ALL:
-        setShowntasks(tasks);
-        break;
       case FilterValue.COMPLETED:
-        setShowntasks(tasks?.filter(t => t.completed));
-        break;
+        return tasks?.filter(t => t.completed);
       case FilterValue.INCOMPLETE:
-        setShowntasks(tasks?.filter(t => !t.completed));
-        break;
+        return tasks?.filter(t => !t.completed);
+      default:
+        return tasks;
     }
   }, [filter, tasks]);
-
+  
 
   // Render
   return (
@@ -116,18 +65,18 @@ const App = () => {
         <ListLine className='flex justify-between items-center text-gray-500'>
           <TaskFilter onChange={handleFilterChange} />
           <div className='flex gap-2 cursor-pointer'>
-            <FaPlus onClick={toggleDialog} />
+            <FaPlus onClick={handleToggleDialog} />
             <TaskDropdown 
-              onAddTask={toggleDialog} 
-              onCompleteAll={completeAllTasks}
-              onDeleteAll={deleteAllTasks}
+              onAddTask={handleToggleDialog} 
+              onCompleteAll={handleCompleteAllTasks}
+              onDeleteAll={handleDeleteAllTasks}
             />
           </div>
         </ListLine>
         {
           shownTasks?.map((task) => (
             <ListLine key={task.id} className={'flex justify-between items-center '}>
-              <p>{task.text}</p>
+              <p style={{overflowWrap: 'break-word', wordBreak: 'break-word', whiteSpace: 'normal'}}>{task.text}</p>
               <div className='flex gap-2 cursor-pointer'>
                 {!task.completed && <IoCheckmarkOutline onClick={() => handleCompleteTask(task.id)} />}
                 <IoPencil onClick={() => handleEditTask(task)} />
@@ -139,7 +88,7 @@ const App = () => {
       </List>
 
       {/* Dialog */}
-      <TaskDialog isOpen={dialogOpen} onOpenChange={toggleDialog} task={editedTask} />
+      <TaskDialog isOpen={dialogOpen} onOpenChange={handleToggleDialog} task={editedTask} />
     </Container>
   );
 }
