@@ -1,15 +1,12 @@
-# MAPBOX LINE DRAWING
-Shows CRUD with polylines and adding custom layers
+# RTK QUERY DEMO
+- Node 20
+- Vite
+- React 18
+- RTK Query with optimistic updates
+- TailwindCSS
+- Shadcn
 
 ### INSTALL
-- developed using NodeJS 20.12.2
-- clone this repo
-- cd into the repo
-- run $ `npm run i`
-- create a `.env` file in the root and put there:
-
-```
-VITE_MAPBOX_TOKEN=<yourMapBoxToken>
-```
-
-- run $ `npm run dev`
+- $ `git clone https://github.com/FeroHriadel/rtkquerydemo.git`
+- $ `npm i`
+- $ `npm run dev`
