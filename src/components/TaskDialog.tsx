@@ -1,18 +1,18 @@
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Task } from "@/types/types";
 import { Button } from "./ui/button";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useToast } from "@/hooks/use-toast";
-import { useAddTaskMutation } from "@/store/taskApi";
+import { useAddTaskMutation, useUpdateTaskMutation } from "@/store/taskApi";
 
 
 
 interface TaskDialogProps {
   isOpen: boolean;
   onOpenChange: () => void;
-  task?: Task;
+  task?: Task | null;
 }
 
 
@@ -20,13 +20,17 @@ interface TaskDialogProps {
 const TaskDialog = ({ isOpen, onOpenChange, task }: TaskDialogProps) => {
   const isEditing = task?.id;
   const title = isEditing ? "Edit Task" : "Add Task";
-  const [text, setText] = useState(task?.text || "");
+  const [text, setText] = useState("");
   const { toast } = useToast();
   const [addTask] = useAddTaskMutation();
+  const [updateTask] = useUpdateTaskMutation();
 
-
-  // Update text
+  
+  // Update input text
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => setText(e.target.value);
+
+  // Clear input text
+  const clearInput = () => setText("");
 
   // Check text
   const validateText = () => {
@@ -42,19 +46,42 @@ const TaskDialog = ({ isOpen, onOpenChange, task }: TaskDialogProps) => {
   };
 
   // Create new task
-  const createTask = () => {
-    addTask({ text });
-    toast({ description: "Saving task" });
+  const createTask = async () => {
+    try {
+      toast({ description: "Creating task" }); //takes a while (not optimistic) - toast keeps user entertained
+      await addTask({ text }).unwrap();
+    } catch (error) {
+      console.log(error);
+      toast({ title: "Error", description: "Failed to create task" });
+    }
+  }
+
+  // Change task text
+  const editTask = async () => {
+    if (!task) return;
+    try {
+      await updateTask({ id: task.id, text }).unwrap();
+    } catch (error) {
+      console.log(error);
+      toast({ title: "Error", description: "Failed to update task" });
+    }
   }
   
   // Submit form
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!validateText()) return;
-    if (isEditing) console.log('editing')
+    if (isEditing) editTask();
     else createTask();
     onOpenChange();
+    clearInput();
   };
+
+
+  // Populate input if editing task
+  useEffect(() => {
+    if (task) setText(task.text);
+  }, [task]);
 
 
   // Render
@@ -65,6 +92,9 @@ const TaskDialog = ({ isOpen, onOpenChange, task }: TaskDialogProps) => {
         {/* Header */}
         <DialogHeader>
           <DialogTitle>{title}</DialogTitle>
+          <DialogDescription>
+            {isEditing ? "Change task name." : "Add new task"}
+          </DialogDescription>
         </DialogHeader>
 
         {/* Form */}
@@ -75,8 +105,8 @@ const TaskDialog = ({ isOpen, onOpenChange, task }: TaskDialogProps) => {
 
         {/* Footer */}
         <DialogFooter>
-          <Button onClick={onOpenChange}>Close</Button>
-          <Button type="submit" form="task-form">Save</Button>
+          <Button onClick={onOpenChange} className="mb-1">Close</Button>
+          <Button type="submit" form="task-form" className="mb-1">Save</Button>
         </DialogFooter>
 
       </DialogContent>

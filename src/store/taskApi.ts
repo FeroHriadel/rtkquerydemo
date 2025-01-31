@@ -24,12 +24,33 @@ export const taskApi = createApi({
         method: 'POST',
         body: newTask,
       }),
-      invalidatesTags: ['Tasks'], //trigerrs refetch when call finishes
+      invalidatesTags: ['Tasks'], //trigerrs re-fetch when call finishes
     }),
-    // Update task optimistically
-    updateTask: builder.mutation<Task, Partial<Task>>({
+    // Update task (completed = true) optimistically
+    completeTask: builder.mutation<Task, Partial<Task>>({
       query: ({ id, ...updatedTask }) => ({
         url: `/tasks/${id}/complete`,
+        method: 'POST',
+        body: updatedTask,
+      }),
+      async onQueryStarted({ id, ...updatedTask }, { dispatch, queryFulfilled }) { //update in cache optimistically instead of re-fetch
+        const patchResult = dispatch(
+          taskApi.util.updateQueryData("getTasks", undefined, (draft) => {
+            const taskIndex = draft.findIndex((task) => task.id === id);
+            if (taskIndex !== -1) { draft[taskIndex] = { ...draft[taskIndex], ...updatedTask }; }
+          })
+        );
+        try {
+          await queryFulfilled;
+        } catch {
+          patchResult.undo();
+        }
+      },
+    }),
+    // Update task (new text) optimistically
+    updateTask: builder.mutation<Task, Partial<Task>>({
+      query: ({ id, ...updatedTask }) => ({
+        url: `/tasks/${id}`,
         method: 'POST',
         body: updatedTask,
       }),
@@ -69,4 +90,4 @@ export const taskApi = createApi({
   }),
 });
 
-export const { useGetTasksQuery, useAddTaskMutation, useUpdateTaskMutation, useDeleteTaskMutation } = taskApi;
+export const { useGetTasksQuery, useAddTaskMutation, useCompleteTaskMutation, useUpdateTaskMutation, useDeleteTaskMutation } = taskApi;

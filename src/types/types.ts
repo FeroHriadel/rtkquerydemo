@@ -4,3 +4,9 @@ export interface Task {
   completed: boolean;
   createdDate: string
 }
+
+export enum FilterValue {
+  ALL = 'all',
+  COMPLETED = 'completed',
+  INCOMPLETE = 'incomplete'
+}
