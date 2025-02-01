@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { useGetTasksQuery, useDeleteTaskMutation, useCompleteTaskMutation, useAddTaskMutation, useUpdateTaskMutation } from '@/store/taskApi';
-import { useToast } from "@/hooks/use-toast";
+import { useToast } from '@/hooks/use-toast';
 import { Task } from '@/types/types';
 
 
@@ -16,11 +16,11 @@ const useTasks = () => {
   // Create a new task
   const handleCreateTask = async (text: string) => {
     try {
-      toast({ description: "Creating task" }); //takes a while (not optimistic) - toast keeps user entertained
+      toast({ description: 'Creating task' }); //takes a while (not optimistic) - toast keeps user entertained
       await addTask({ text }).unwrap();
     } catch (error) {
       console.log(error);
-      toast({ title: "Error", description: "Failed to create task" });
+      toast({ title: 'Error', description: 'Failed to create task' });
     }
   }
 
@@ -31,7 +31,7 @@ const useTasks = () => {
       await updateTask({ id: task.id, text }).unwrap();
     } catch (error) {
       console.log(error);
-      toast({ title: "Error", description: "Failed to update task" });
+      toast({ title: 'Error', description: 'Failed to update task' });
     }
   }
 
@@ -41,13 +41,19 @@ const useTasks = () => {
     return incompleteTasks;
   }
 
+  // Get completed tasks
+  const getCompletedTasks = () => {
+    const completedTasks = tasks?.filter(t => t.completed === true);
+    return completedTasks;
+  }
+
   // Update tasks to 'completed' optimistically
   const handleCompleteTask = async (id: number) => {
     try {
       await completeTask({ id, completed: true }).unwrap();
     } catch (error) {
       console.log(error);
-      toast({title: "Error", description: "Failed to update task" });
+      toast({title: 'Error', description: 'Failed to update task' });
     }
   }
 
@@ -63,19 +69,20 @@ const useTasks = () => {
       await deleteTask(id).unwrap(); //unwrap throws an error if mutation fails
     } catch (error) {
       console.log(error);
-      toast({title: "Error", description: "Failed to delete task" });
+      toast({title: 'Error', description: 'Failed to delete task' });
     }
   }
 
   // Delete all tasks 
-  const handleDeleteAllTasks = () => {
-    tasks?.forEach(t => handleDeleteTask(t.id));
+  const handleDeleteCompletedTasks = () => {
+    const completedTasks = getCompletedTasks();
+    completedTasks?.forEach(t => handleDeleteTask(t.id));
   }
 
 
   // Show load tasks error
   useEffect(() => {
-    if (getTasksError) toast({title: "Error", description: "Failed to load tasks" });
+    if (getTasksError) toast({title: 'Error', description: 'Failed to load tasks' });
   }, [getTasksError, toast]);
 
 
@@ -84,12 +91,13 @@ const useTasks = () => {
     tasks,
     loadingTasks,
     getTasksError,
+    getCompletedTasks,
     handleCreateTask,
     handleEditTask,
     handleCompleteTask,
     handleCompleteAllTasks,
     handleDeleteTask,
-    handleDeleteAllTasks,
+    handleDeleteCompletedTasks,
   }
 }
 

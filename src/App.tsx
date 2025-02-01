@@ -1,15 +1,16 @@
 import { useMemo, useState } from 'react';
-import useTasks from './hooks/useTasks';
+import useTasks from '@/hooks/useTasks';
 import Container from '@/components/Container';
 import Loading from '@/components/Loading';
 import TaskDialog from '@/components/TaskDialog';
 import TaskDropdown from '@/components/TaskDropdown';
-import TaskFilter from './components/TaskFilter';
+import TaskFilter from '@/components/TaskFilter';
+import TaskCount from '@/components/TaskCount';
 import { List, ListLine } from '@/components/List';
-import { FaPlus } from "react-icons/fa6";
-import { IoCheckmarkOutline } from "react-icons/io5";
-import { IoPencil } from "react-icons/io5";
-import { GoTrash } from "react-icons/go";
+import { FaPlus } from 'react-icons/fa6';
+import { IoCheckmarkOutline } from 'react-icons/io5';
+import { IoPencil } from 'react-icons/io5';
+import { GoTrash } from 'react-icons/go';
 import { Task, FilterValue } from '@/types/types';
 
 
@@ -18,7 +19,7 @@ const App = () => {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editedTask, setEditedTask] = useState<Task | null>(null); //task to edit
   const [filter, setFilter] = useState<FilterValue>(FilterValue.ALL);
-  const { tasks, loadingTasks, handleCompleteTask, handleCompleteAllTasks, handleDeleteTask, handleDeleteAllTasks } = useTasks();
+  const { tasks, loadingTasks, handleCompleteTask, handleCompleteAllTasks, handleDeleteTask, handleDeleteCompletedTasks } = useTasks();
 
   // Update filter value
   const handleFilterChange = (value: FilterValue) => setFilter(value);
@@ -69,7 +70,7 @@ const App = () => {
             <TaskDropdown 
               onAddTask={handleToggleDialog} 
               onCompleteAll={handleCompleteAllTasks}
-              onDeleteAll={handleDeleteAllTasks}
+              onDeleteCompleted={handleDeleteCompletedTasks}
             />
           </div>
         </ListLine>
@@ -86,6 +87,9 @@ const App = () => {
           ))
         }
       </List>
+
+      {/* Footer */}
+      <TaskCount />
 
       {/* Dialog */}
       <TaskDialog isOpen={dialogOpen} onOpenChange={handleToggleDialog} task={editedTask} />

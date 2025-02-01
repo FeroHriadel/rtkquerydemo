@@ -13,7 +13,7 @@ interface ListLineProps {
 
 export const List = ({ children, className, style }: ListProps) => {
   return (
-    <ul className={"w-[100%] flex flex-col border border-gray-300 last:border-b-0 rounded " + className} style={style}>
+    <ul className={'w-[100%] flex flex-col border border-gray-300 last:border-b-0 rounded ' + className} style={style}>
       {children}
     </ul>
   )
@@ -21,7 +21,7 @@ export const List = ({ children, className, style }: ListProps) => {
 
 export const ListLine = ({ children, className, style }: ListLineProps) => {
   return (
-    <li className={"w-[100%] border-b border-gray-300 hover:bg-gray-300 first:hover:bg-transparent even:bg-gray-100 p-4 " + className} style={style}>
+    <li className={'w-[100%] border-b border-gray-300 hover:bg-gray-300 first:hover:bg-transparent even:bg-gray-100 p-4 ' + className} style={style}>
       {children}
     </li>
   )
